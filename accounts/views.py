@@ -1,5 +1,6 @@
+from django.contrib import messages
 from functools import wraps
-
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django import forms
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
@@ -89,3 +90,35 @@ def home(request):
             .order_by("-issue_date")[:25]
         )
     return render(request, "accounts/home.html", {"invoices": invoices})
+class StaffForm(SignupForm):
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = "staff"
+        if commit:
+            user.save()
+        return user
+
+
+@role_required("admin")
+@login_required
+@user_passes_test(lambda u: u.is_admin_role)
+def add_staff(request):
+    form = StaffForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        messages.success(
+            request,
+            f"Staff account created for {user.email}."
+        )
+        return redirect("add_staff")
+
+    return render(
+        request,
+        "accounts/form_page.html",
+        {
+            "form": form,
+            "title": "Add staff member",
+            "button": "Create staff account"
+        }
+    )
