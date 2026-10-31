@@ -1,9 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% for m in messages %}
-  <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %}">{{ m }}</div>
-{% endfor %}
+
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2 class="mb-0">
