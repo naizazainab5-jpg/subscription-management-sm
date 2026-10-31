@@ -17,7 +17,7 @@
       <ul class="navbar-nav me-auto">
         {% if user.is_authenticated %}
           {% if user.is_staff_role %}
-            <li class="nav-item"><a class="nav-link" href="#">Products</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'product_list' %}">Products</a></li>
             <li class="nav-item"><a class="nav-link" href="#">Plans</a></li>
             <li class="nav-item"><a class="nav-link" href="#">Subscriptions</a></li>
             <li class="nav-item"><a class="nav-link" href="#">Invoices</a></li>

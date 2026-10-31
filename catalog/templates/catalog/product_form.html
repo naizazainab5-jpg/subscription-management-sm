@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{% if product %}Edit product{% else %}New product{% endif %}{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">{% if product %}Edit {{ product.name }}{% else %}New product{% endif %}</h1>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="card mb-3"><div class="card-body">
+    {{ form.as_div }}
+  </div></div>
+
+  <h2 class="h5">Variants</h2>
+  <p class="text-muted small">Example: attribute "Brand", value "Odoo", extra price 560. Leave blank rows empty. Tick Delete to remove a variant.</p>
+  {{ formset.management_form }}
+  {{ formset.non_form_errors }}
+  <table class="table table-sm bg-white">
+    <thead><tr><th>Attribute</th><th>Value</th><th>Extra price</th><th>Delete</th></tr></thead>
+    <tbody>
+    {% for f in formset %}
+      <tr>
+        <td>{% for h in f.hidden_fields %}{{ h }}{% endfor %}{{ f.attribute }}{{ f.attribute.errors }}</td>
+        <td>{{ f.value }}{{ f.value.errors }}</td>
+        <td>{{ f.extra_price }}{{ f.extra_price.errors }}</td>
+        <td>{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <button class="btn btn-primary">Save</button>
+  <a class="btn btn-outline-secondary" href="{% url 'product_list' %}">Cancel</a>
+</form>
+{% endblock %}
