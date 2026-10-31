@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Taxes{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Taxes</h1>
+  <a class="btn btn-primary" href="{% url 'tax_create' %}">+ New tax</a>
+</div>
+
+<table class="table table-sm table-hover bg-white">
+  <thead><tr><th>Name</th><th>Rate (%)</th><th></th></tr></thead>
+  <tbody>
+  {% for t in page %}
+    <tr>
+      <td>{{ t.name }}</td><td>{{ t.rate }}</td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'tax_edit' t.pk %}">Edit</a>
+        <form method="post" action="{% url 'tax_delete' t.pk %}" class="d-inline"
+              onsubmit="return confirm('Delete this tax?');">
+          {% csrf_token %}<button class="btn btn-sm btn-outline-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="3" class="text-muted">No taxes yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if page.has_other_pages %}
+<nav><ul class="pagination">
+  {% if page.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page.previous_page_number }}">Previous</a></li>{% endif %}
+  <li class="page-item disabled"><span class="page-link">Page {{ page.number }} of {{ page.paginator.num_pages }}</span></li>
+  {% if page.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page.next_page_number }}">Next</a></li>{% endif %}
+</ul></nav>
+{% endif %}
+{% endblock %}

@@ -1,3 +1,4 @@
+from .models import Plan, Product, ProductVariant, Tax
 from django import forms
 from django.forms import inlineformset_factory
 
@@ -57,3 +58,13 @@ class PlanForm(BootstrapModelForm):
         if start and end and end < start:
             self.add_error("end_date", "End date cannot be before the start date.")
         return cleaned
+class TaxForm(BootstrapModelForm):
+    class Meta:
+        model = Tax
+        fields = ["name", "rate"]
+
+    def clean_rate(self):
+        rate = self.cleaned_data["rate"]
+        if rate < 0 or rate > 100:
+            raise forms.ValidationError("Rate must be between 0 and 100.")
+        return rate

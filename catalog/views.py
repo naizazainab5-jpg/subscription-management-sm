@@ -7,8 +7,8 @@ from django.views.decorators.http import require_POST
 
 from accounts.views import role_required
 
-from .forms import PlanForm, ProductForm, VariantFormSet
-from .models import Plan, Product
+from .forms import PlanForm, ProductForm, TaxForm, VariantFormSet
+from .models import Plan, Product, Tax
 
 
 # ---------- Products ----------
@@ -85,3 +85,33 @@ def plan_delete(request, pk):
     except (ProtectedError, RestrictedError):
         messages.warning(request, "This plan is used in subscriptions and can't be deleted.")
     return redirect("plan_list")
+# ---------- Taxes ----------
+
+@role_required("admin", "staff")
+def tax_list(request):
+    taxes = Tax.objects.order_by("name")
+    page = Paginator(taxes, 25).get_page(request.GET.get("page"))
+    return render(request, "catalog/tax_list.html", {"page": page})
+
+
+@role_required("admin", "staff")
+def tax_edit(request, pk=None):
+    tax = get_object_or_404(Tax, pk=pk) if pk else None
+    form = TaxForm(request.POST or None, instance=tax)
+    if request.method == "POST" and form.is_valid():
+        tax = form.save()
+        messages.success(request, f"Tax '{tax.name}' saved.")
+        return redirect("tax_list")
+    return render(request, "catalog/tax_form.html", {"form": form, "tax": tax})
+
+
+@role_required("admin", "staff")
+@require_POST
+def tax_delete(request, pk):
+    tax = get_object_or_404(Tax, pk=pk)
+    try:
+        tax.delete()
+        messages.success(request, "Tax deleted.")
+    except (ProtectedError, RestrictedError):
+        messages.warning(request, "This tax is used on subscription lines and can't be deleted.")
+    return redirect("tax_list")
