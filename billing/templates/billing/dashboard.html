@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Finance dashboard</h1>
+
+<form method="get" class="row g-2 mb-4">
+  <div class="col-md-3"><label class="form-label small">From</label>{{ form.date_from }}</div>
+  <div class="col-md-3"><label class="form-label small">To</label>{{ form.date_to }}</div>
+  <div class="col-md-3"><label class="form-label small">Invoice status</label>{{ form.status }}</div>
+  <div class="col-md-3 d-flex align-items-end gap-2">
+    <button class="btn btn-primary">Filter</button>
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Reset</a>
+  </div>
+</form>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card"><div class="card-body">
+      <div class="text-muted small">Active subscriptions</div>
+      <div class="fs-3 fw-bold">{{ active_subscriptions }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card"><div class="card-body">
+      <div class="text-muted small">Revenue received</div>
+      <div class="fs-3 fw-bold">{{ revenue|floatformat:2 }}</div>
+      <div class="text-muted small">{{ payment_count }} payment(s)</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card"><div class="card-body">
+      <div class="text-muted small">Outstanding (still owed)</div>
+      <div class="fs-3 fw-bold">{{ outstanding|floatformat:2 }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-danger"><div class="card-body">
+      <div class="text-muted small">Overdue invoices</div>
+      <div class="fs-3 fw-bold text-danger">{{ overdue_count }}</div>
+      <div class="text-muted small">{{ overdue_amount|floatformat:2 }} owed</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <h2 class="h6">Subscriptions by status</h2>
+    <table class="table table-sm bg-white">
+      <tbody>
+        <tr><td>Draft</td><td class="text-end">{{ subscription_counts.draft|default:0 }}</td></tr>
+        <tr><td>Quotation</td><td class="text-end">{{ subscription_counts.quotation|default:0 }}</td></tr>
+        <tr><td>Confirmed</td><td class="text-end">{{ subscription_counts.confirmed|default:0 }}</td></tr>
+        <tr><td>Active</td><td class="text-end">{{ subscription_counts.active|default:0 }}</td></tr>
+        <tr><td>Closed</td><td class="text-end">{{ subscription_counts.closed|default:0 }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-6">
+    <h2 class="h6">Invoices by status (in the date range)</h2>
+    <table class="table table-sm bg-white">
+      <thead><tr><th>Status</th><th class="text-end">Count</th><th class="text-end">Total</th></tr></thead>
+      <tbody>
+        {% for r in invoice_breakdown %}
+        <tr><td>{{ r.label }}</td><td class="text-end">{{ r.n }}</td><td class="text-end">{{ r.total|floatformat:2 }}</td></tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-muted">No invoices yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h2 class="h6">Overdue invoices (oldest 25)</h2>
+<table class="table table-sm table-hover bg-white mb-4">
+  <thead><tr><th>Invoice</th><th>Customer</th><th>Due date</th><th class="text-end">Total</th><th class="text-end">Amount due</th></tr></thead>
+  <tbody>
+    {% for inv in overdue_rows %}
+    <tr>
+      <td><a href="{% url 'invoice_detail' inv.pk %}">{{ inv.number }}</a></td>
+      <td>{{ inv.customer.email }}</td>
+      <td>{{ inv.due_date }} <span class="badge text-bg-danger">Overdue</span></td>
+      <td class="text-end">{{ inv.total }}</td>
+      <td class="text-end">{{ inv.due }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" class="text-muted">No overdue invoices.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="h6">Latest invoices (25)</h2>
+<table class="table table-sm table-hover bg-white mb-4">
+  <thead><tr><th>Invoice</th><th>Customer</th><th>Issued</th><th>Due date</th><th class="text-end">Total</th><th class="text-end">Amount due</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for inv in invoice_rows %}
+    <tr>
+      <td><a href="{% url 'invoice_detail' inv.pk %}">{{ inv.number }}</a></td>
+      <td>{{ inv.customer.email }}</td>
+      <td>{{ inv.issue_date }}</td>
+      <td>{{ inv.due_date }}</td>
+      <td class="text-end">{{ inv.total }}</td>
+      <td class="text-end">{{ inv.due }}</td>
+      <td>{{ inv.get_status_display }}{% if inv.status == "confirmed" and inv.due_date < today %} <span class="badge text-bg-danger">Overdue</span>{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7" class="text-muted">No invoices match.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2 class="h6">Latest payments (10)</h2>
+<table class="table table-sm bg-white">
+  <thead><tr><th>Date</th><th>Invoice</th><th>Method</th><th class="text-end">Amount</th><th>Note</th></tr></thead>
+  <tbody>
+    {% for p in recent_payments %}
+    <tr><td>{{ p.date }}</td><td>{{ p.invoice.number }}</td><td>{{ p.get_method_display }}</td><td class="text-end">{{ p.amount }}</td><td>{{ p.note }}</td></tr>
+    {% empty %}
+    <tr><td colspan="5" class="text-muted">No payments yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
