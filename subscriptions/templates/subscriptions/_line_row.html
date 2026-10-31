@@ -1,0 +1,12 @@
+<tr class="line-row">
+  <td>
+    {% for h in f.hidden_fields %}{{ h }}{% endfor %}
+    {{ f.product }}{{ f.product.errors }}{{ f.non_field_errors }}
+  </td>
+  <td>{{ f.variant }}{{ f.variant.errors }}</td>
+  <td style="width: 90px">{{ f.quantity }}{{ f.quantity.errors }}</td>
+  <td style="width: 130px">{{ f.unit_price }}{{ f.unit_price.errors }}</td>
+  <td>{{ f.tax }}{{ f.tax.errors }}</td>
+  <td class="line-total text-end">0.00</td>
+  <td class="text-center">{{ f.DELETE }}</td>
+</tr>
