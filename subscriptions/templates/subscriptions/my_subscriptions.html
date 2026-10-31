@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-3">My subscriptions</h2>
+
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr><th>Number</th><th>Plan</th><th>Status</th><th>Start</th><th>Expiry</th></tr>
+    </thead>
+    <tbody>
+      {% for s in subscriptions %}
+      <tr>
+        <td><a href="{% url 'subscription_detail' s.pk %}">{{ s.number }}</a></td>
+        <td>{{ s.plan.name }}</td>
+        <td>{{ s.get_status_display }}</td>
+        <td>{{ s.start_date|date:"d M Y" }}</td>
+        <td>{{ s.expiry_date|date:"d M Y"|default:"-" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted">You have no subscriptions yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
