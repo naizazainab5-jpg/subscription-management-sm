@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-3">
+  {% if subscription %}Edit {{ subscription.number }}{% else %}New subscription{% endif %}
+</h2>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="row">
+    <div class="col-md-6">{{ form.as_div }}</div>
+  </div>
+
+  <h4 class="mt-4">Product lines</h4>
+  {{ formset.management_form }}
+  {{ formset.non_form_errors }}
+
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th>Product</th><th>Variant</th><th>Qty</th><th>Unit price</th>
+          <th>Tax</th><th class="text-end">Line total</th><th>Delete</th>
+        </tr>
+      </thead>
+      <tbody id="lines-body">
+        {% for f in formset %}
+          {% include "subscriptions/_line_row.html" with f=f %}
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="5" class="text-end">Subtotal</td><td class="text-end" id="subtotal">0.00</td><td></td></tr>
+        <tr><td colspan="5" class="text-end">Tax</td><td class="text-end" id="taxtotal">0.00</td><td></td></tr>
+        <tr class="fw-bold"><td colspan="5" class="text-end">Total</td><td class="text-end" id="grandtotal">0.00</td><td></td></tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <button type="button" id="add-line" class="btn btn-outline-primary btn-sm">+ Add line</button>
+  <hr>
+  <button type="submit" class="btn btn-success">Save subscription</button>
+  <a href="{% url 'subscription_list' %}" class="btn btn-outline-secondary">Cancel</a>
+</form>
+
+<template id="empty-row">
+  {% include "subscriptions/_line_row.html" with f=formset.empty_form %}
+</template>
+
+{{ price_data|json_script:"price-data" }}
+
+<script>
+(function () {
+  const data = JSON.parse(document.getElementById("price-data").textContent);
+  const body = document.getElementById("lines-body");
+  const totalForms = document.getElementById("id_lines-TOTAL_FORMS");
+  const planSelect = document.getElementById("id_plan");
+
+  const field = (row, name) => row.querySelector('[name$="-' + name + '"]');
+  const money = (n) => (Math.round(n * 100) / 100).toFixed(2);
+
+  function rebuildVariants(row, keepValue) {
+    const select = field(row, "variant");
+    const current = keepValue ? select.value : "";
+    const list = data.variants[field(row, "product").value] || [];
+    select.innerHTML = "";
+    select.add(new Option("---------", ""));
+    list.forEach(function (v) { select.add(new Option(v.label, v.id)); });
+    select.value = current;
+  }
+
+  function setPrice(row) {
+    const productId = field(row, "product").value;
+    if (!productId) return;
+    const variantId = field(row, "variant").value;
+    let extra = 0;
+    (data.variants[productId] || []).forEach(function (v) {
+      if (String(v.id) === variantId) extra = Number(v.extra);
+    });
+    field(row, "unit_price").value = money(Number(data.products[productId] || 0) + extra);
+  }
+
+  function recalc() {
+    let subtotal = 0, tax = 0;
+    body.querySelectorAll("tr.line-row").forEach(function (row) {
+      const amount = Number(field(row, "quantity").value || 0) * Number(field(row, "unit_price").value || 0);
+      row.querySelector(".line-total").textContent = money(amount);
+      const del = field(row, "DELETE");
+      if (del && del.checked) { row.classList.add("opacity-50"); return; }
+      row.classList.remove("opacity-50");
+      subtotal += amount;
+      tax += amount * Number(data.taxes[field(row, "tax").value] || 0) / 100;
+    });
+    document.getElementById("subtotal").textContent = money(subtotal);
+    document.getElementById("taxtotal").textContent = money(tax);
+    document.getElementById("grandtotal").textContent = money(subtotal + tax);
+  }
+
+  body.addEventListener("change", function (e) {
+    const row = e.target.closest("tr.line-row");
+    if (!row) return;
+    if (e.target.name.endsWith("-product")) { rebuildVariants(row, false); setPrice(row); }
+    else if (e.target.name.endsWith("-variant")) { setPrice(row); }
+    recalc();
+  });
+  body.addEventListener("input", recalc);
+
+  document.getElementById("add-line").addEventListener("click", function () {
+    const html = document.getElementById("empty-row").innerHTML.replace(/__prefix__/g, totalForms.value);
+    body.insertAdjacentHTML("beforeend", html);
+    totalForms.value = Number(totalForms.value) + 1;
+    field(body.lastElementChild, "quantity").value = data.plans[planSelect.value] || 1;
+    recalc();
+  });
+
+  body.querySelectorAll("tr.line-row").forEach(function (row) { rebuildVariants(row, true); });
+  recalc();
+})();
+</script>
+{% endblock %}
