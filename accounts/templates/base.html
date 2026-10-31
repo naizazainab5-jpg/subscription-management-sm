@@ -17,7 +17,7 @@
       <ul class="navbar-nav me-auto">
         {% if user.is_authenticated %}
           {% if user.is_staff_role %}
-          
+
             <li class="nav-item"><a class="nav-link" href="{% url 'product_list' %}">Products</a></li>
             <li class="nav-item"><a class="nav-link" href="{% url 'plan_list' %}">Plans</a></li>
             <li class="nav-item"><a class="nav-link" href="{% url 'tax_list' %}">Taxes</a></li>
@@ -25,12 +25,12 @@
             <li class="nav-item"><a class="nav-link" href="{% url 'subscription_list' %}">Subscriptions</a></li>
             <li class="nav-item"><a class="nav-link" href="{% url 'invoice_list' %}">Invoices</a></li>
             <li class="nav-item"><a class="nav-link" href="{% url 'invoice_list' %}?status=confirmed">Payments</a></li>
+            
             <li class="nav-item">
               <a class="nav-link" href="{% url 'add_staff' %}">Add Staff</a>
             </li>
-           
           {% else %}
-            <li class="nav-item"><a class="nav-link" href="#">My subscriptions</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'my_subscriptions' %}">My subscriptions</a></li>
           {% endif %}
         {% endif %}
       </ul>
