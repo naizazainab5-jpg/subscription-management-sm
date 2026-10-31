@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-3">Subscriptions</h2>
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-5">
+    <input type="text" name="q" value="{{ q }}" class="form-control"
+           placeholder="Search by number or customer email">
+  </div>
+  <div class="col-md-3">
+    <select name="status" class="form-select">
+      <option value="">All statuses</option>
+      {% for value, label in statuses %}
+        <option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a href="{% url 'subscription_list' %}" class="btn btn-outline-secondary">Reset</a>
+  </div>
+</form>
+
+<p class="text-muted">{{ page_obj.paginator.count }} subscription(s) found</p>
+
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Number</th>
+        <th>Customer</th>
+        <th>Plan</th>
+        <th>Status</th>
+        <th>Start</th>
+        <th>Expiry</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in page_obj %}
+      <tr>
+        <td>{{ s.number }}</td>
+        <td>{{ s.customer.email }}</td>
+        <td>{{ s.plan.name }}</td>
+        <td>
+          <span class="badge
+            {% if s.status == 'draft' %}text-bg-secondary
+            {% elif s.status == 'quotation' %}text-bg-info
+            {% elif s.status == 'confirmed' %}text-bg-primary
+            {% elif s.status == 'active' %}text-bg-success
+            {% else %}text-bg-dark{% endif %}">
+            {{ s.get_status_display }}
+          </span>
+        </td>
+        <td>{{ s.start_date|date:"d M Y" }}</td>
+        <td>{{ s.expiry_date|date:"d M Y"|default:"-" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-muted">No subscriptions found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+<nav>
+  <ul class="pagination">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">Previous</a>
+      </li>
+    {% endif %}
+    <li class="page-item disabled">
+      <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    </li>
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Next</a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}
