@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import inlineformset_factory
 
-from .models import Product, ProductVariant
+from .models import Plan, Product, ProductVariant
 
 
 class BootstrapModelForm(forms.ModelForm):
@@ -30,3 +30,30 @@ class VariantForm(BootstrapModelForm):
 VariantFormSet = inlineformset_factory(
     Product, ProductVariant, form=VariantForm, extra=2, can_delete=True
 )
+
+
+class PlanForm(BootstrapModelForm):
+    class Meta:
+        model = Plan
+        fields = [
+            "name", "price", "billing_period", "min_quantity",
+            "start_date", "end_date",
+            "auto_close", "allow_early_close", "allow_pause", "allow_renew",
+        ]
+        widgets = {
+            "start_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "end_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+        }
+        labels = {
+            "auto_close": "Auto close when end date passes",
+            "allow_early_close": "Allow early close",
+            "allow_pause": "Allow pause",
+            "allow_renew": "Allow renew",
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        start, end = cleaned.get("start_date"), cleaned.get("end_date")
+        if start and end and end < start:
+            self.add_error("end_date", "End date cannot be before the start date.")
+        return cleaned
