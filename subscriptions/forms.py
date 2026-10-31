@@ -4,7 +4,7 @@ from django.forms import BaseInlineFormSet, inlineformset_factory
 
 from catalog.models import Product, ProductVariant
 
-from .models import Subscription, SubscriptionLine
+from .models import QuotationTemplate, Subscription, SubscriptionLine
 
 User = get_user_model()
 
@@ -93,3 +93,22 @@ LineFormSet = inlineformset_factory(
     extra=1,
     can_delete=True,
 )
+
+
+class FromTemplateForm(forms.Form):
+    template = forms.ModelChoiceField(
+        queryset=QuotationTemplate.objects.select_related("plan").order_by("name")
+    )
+    customer = forms.ModelChoiceField(queryset=User.objects.none())
+    start_date = forms.DateField(
+        widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["template"].label_from_instance = (
+            lambda t: f"{t.name} ({t.plan.name}, valid {t.validity_days} days)"
+        )
+        self.fields["customer"].queryset = User.objects.filter(role="customer").order_by("email")
+        self.fields["customer"].label_from_instance = lambda user: user.email
+        style_fields(self)

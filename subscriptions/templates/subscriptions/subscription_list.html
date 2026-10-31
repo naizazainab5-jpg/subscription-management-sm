@@ -43,7 +43,7 @@
     <tbody>
       {% for s in page_obj %}
       <tr>
-        <td>{{ s.number }}</td>
+       <td><a href="{% url 'subscription_detail' s.pk %}">{{ s.number }}</a></td
         <td>{{ s.customer.email }}</td>
         <td>{{ s.plan.name }}</td>
         <td>

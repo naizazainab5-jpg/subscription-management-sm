@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% for m in messages %}
+  <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %}">{{ m }}</div>
+{% endfor %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">
+    {{ subscription.number }}
+    <span class="badge fs-6
+      {% if subscription.status == 'draft' %}text-bg-secondary
+      {% elif subscription.status == 'quotation' %}text-bg-info
+      {% elif subscription.status == 'confirmed' %}text-bg-primary
+      {% elif subscription.status == 'active' %}text-bg-success
+      {% else %}text-bg-dark{% endif %}">{{ subscription.get_status_display }}</span>
+  </h2>
+  <div>
+    {% if is_staff %}
+      <a href="{% url 'subscription_list' %}" class="btn btn-outline-secondary">Back to list</a>
+    {% else %}
+      <a href="{% url 'my_subscriptions' %}" class="btn btn-outline-secondary">Back</a>
+    {% endif %}
+    {% if can_edit %}
+      <a href="{% url 'subscription_edit' subscription.pk %}" class="btn btn-outline-primary">Edit</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if actions %}
+<div class="mb-3">
+  <span class="me-2 text-muted">Move to:</span>
+  {% for a in actions %}
+    <form method="post" action="{% url 'subscription_change_status' subscription.pk %}" class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="status" value="{{ a.value }}">
+      <button type="submit" class="btn {{ a.css }}">{{ a.label }}</button>
+    </form>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <table class="table table-sm">
+      <tr><th style="width: 40%">Customer</th><td>{{ subscription.customer.email }}</td></tr>
+      <tr><th>Plan</th><td>{{ subscription.plan.name }} ({{ subscription.plan.get_billing_period_display }})</td></tr>
+      <tr><th>Start date</th><td>{{ subscription.start_date|date:"d M Y" }}</td></tr>
+      <tr><th>Expiry date</th><td>{{ subscription.expiry_date|date:"d M Y"|default:"-" }}</td></tr>
+      <tr><th>Payment terms</th><td>{{ subscription.payment_terms }} ({{ subscription.payment_days }} days)</td></tr>
+      <tr><th>Next billing</th><td>{{ subscription.next_billing_date|date:"d M Y"|default:"-" }}</td></tr>
+    </table>
+  </div>
+</div>
+
+<h4>Product lines</h4>
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Product</th><th>Variant</th><th class="text-end">Qty</th>
+        <th class="text-end">Unit price</th><th>Tax</th><th class="text-end">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.line.product.name }}</td>
+        <td>{{ r.line.variant.value|default:"-" }}</td>
+        <td class="text-end">{{ r.line.quantity }}</td>
+        <td class="text-end">{{ r.line.unit_price|floatformat:2 }}</td>
+        <td>{% if r.line.tax %}{{ r.line.tax }}{% else %}-{% endif %}</td>
+        <td class="text-end">{{ r.amount|floatformat:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="text-center text-muted">No product lines.</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="5" class="text-end">Subtotal</td><td class="text-end">{{ subtotal|floatformat:2 }}</td></tr>
+      <tr><td colspan="5" class="text-end">Tax</td><td class="text-end">{{ tax_total|floatformat:2 }}</td></tr>
+      <tr class="fw-bold"><td colspan="5" class="text-end">Total</td><td class="text-end">{{ total|floatformat:2 }}</td></tr>
+    </tfoot>
+  </table>
+</div>
+{% endblock %}
