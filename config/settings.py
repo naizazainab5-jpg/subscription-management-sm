@@ -133,3 +133,8 @@ LOGIN_URL = "/login/"
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "accounts.validators.BrightloopPasswordValidator"},
 ]
+
+try:
+    from .local_settings import *  # personal settings, not committed to git
+except ImportError:
+    pass

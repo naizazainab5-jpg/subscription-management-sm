@@ -25,3 +25,4 @@ media/
 # Operating system
 .DS_Store
 Thumbs.db
+config/local_settings.py
