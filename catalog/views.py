@@ -7,8 +7,8 @@ from django.views.decorators.http import require_POST
 
 from accounts.views import role_required
 
-from .forms import PlanForm, ProductForm, TaxForm, VariantFormSet
-from .models import Plan, Product, Tax
+from .forms import DiscountForm, PlanForm, ProductForm, TaxForm, VariantFormSet
+from .models import Discount, Plan, Product, Tax
 
 
 # ---------- Products ----------
@@ -115,3 +115,36 @@ def tax_delete(request, pk):
     except (ProtectedError, RestrictedError):
         messages.warning(request, "This tax is used on subscription lines and can't be deleted.")
     return redirect("tax_list")
+# ---------- Discounts ----------
+
+@role_required("admin", "staff")
+def discount_list(request):
+    q = request.GET.get("q", "").strip()
+    discounts = Discount.objects.order_by("name")
+    if q:
+        discounts = discounts.filter(name__icontains=q)
+    page = Paginator(discounts, 25).get_page(request.GET.get("page"))
+    return render(request, "catalog/discount_list.html", {"page": page, "q": q})
+
+
+@role_required("admin", "staff")
+def discount_edit(request, pk=None):
+    discount = get_object_or_404(Discount, pk=pk) if pk else None
+    form = DiscountForm(request.POST or None, instance=discount)
+    if request.method == "POST" and form.is_valid():
+        discount = form.save()
+        messages.success(request, f"Discount '{discount.name}' saved.")
+        return redirect("discount_list")
+    return render(request, "catalog/discount_form.html", {"form": form, "discount": discount})
+
+
+@role_required("admin", "staff")
+@require_POST
+def discount_delete(request, pk):
+    discount = get_object_or_404(Discount, pk=pk)
+    try:
+        discount.delete()
+        messages.success(request, "Discount deleted.")
+    except (ProtectedError, RestrictedError):
+        messages.warning(request, "This discount is in use and can't be deleted.")
+    return redirect("discount_list")

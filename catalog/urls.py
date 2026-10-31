@@ -15,4 +15,8 @@ urlpatterns = [
     path("taxes/new/", views.tax_edit, name="tax_create"),
     path("taxes/<int:pk>/edit/", views.tax_edit, name="tax_edit"),
     path("taxes/<int:pk>/delete/", views.tax_delete, name="tax_delete"),
+        path("discounts/", views.discount_list, name="discount_list"),
+    path("discounts/new/", views.discount_edit, name="discount_create"),
+    path("discounts/<int:pk>/edit/", views.discount_edit, name="discount_edit"),
+    path("discounts/<int:pk>/delete/", views.discount_delete, name="discount_delete"),
 ]

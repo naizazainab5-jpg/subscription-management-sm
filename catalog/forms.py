@@ -1,4 +1,4 @@
-from .models import Plan, Product, ProductVariant, Tax
+from .models import Discount, Plan, Product, ProductVariant, Tax
 from django import forms
 from django.forms import inlineformset_factory
 
@@ -68,3 +68,27 @@ class TaxForm(BootstrapModelForm):
         if rate < 0 or rate > 100:
             raise forms.ValidationError("Rate must be between 0 and 100.")
         return rate
+class DiscountForm(BootstrapModelForm):
+    class Meta:
+        model = Discount
+        fields = [
+            "name", "kind", "value", "applies_to", "products",
+            "min_purchase", "min_quantity", "start_date", "end_date", "usage_limit",
+        ]
+        widgets = {
+            "start_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "end_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "products": forms.SelectMultiple(attrs={"size": 6}),
+        }
+        help_texts = {"products": "Only used when 'Applies to' is Specific products. Hold Ctrl to pick several."}
+
+    def clean(self):
+        cleaned = super().clean()
+        start, end = cleaned.get("start_date"), cleaned.get("end_date")
+        if start and end and end < start:
+            self.add_error("end_date", "End date cannot be before the start date.")
+        if cleaned.get("kind") == Discount.PERCENT and (cleaned.get("value") or 0) > 100:
+            self.add_error("value", "A percentage cannot be more than 100.")
+        if cleaned.get("applies_to") == Discount.PRODUCT and not cleaned.get("products"):
+            self.add_error("products", "Pick at least one product.")
+        return cleaned
