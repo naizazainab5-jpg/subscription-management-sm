@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ invoice.number }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h4 m-0">Invoice {{ invoice.number }}</h1>
+    <span class="badge text-bg-secondary">{{ invoice.get_status_display }}</span>
+    {% if is_overdue %}<span class="badge text-bg-danger">Overdue</span>{% endif %}
+  </div>
+  <div class="d-flex gap-2 d-print-none">
+    <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">Print</button>
+    {% if staff and invoice.status == "draft" %}
+      <form method="post" action="{% url 'invoice_confirm' invoice.pk %}" class="m-0">{% csrf_token %}<button class="btn btn-success btn-sm">Confirm</button></form>
+    {% endif %}
+    {% if can_cancel %}
+      <form method="post" action="{% url 'invoice_cancel' invoice.pk %}" class="m-0" onsubmit="return confirm('Cancel this invoice?')">{% csrf_token %}<button class="btn btn-outline-danger btn-sm">Cancel</button></form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md-6">
+    <div class="text-muted small">Customer</div>
+    <div>{{ invoice.customer.first_name }} {{ invoice.customer.email }}</div>
+    <div class="text-muted small mt-2">Subscription</div>
+    <div>{{ invoice.subscription.number }}</div>
+  </div>
+  <div class="col-md-6">
+    <div><span class="text-muted small">Issued:</span> {{ invoice.issue_date }}</div>
+    <div><span class="text-muted small">Due:</span> {{ invoice.due_date }}</div>
+    <div><span class="text-muted small">Period:</span> {{ invoice.period_start }} to {{ invoice.period_end }}</div>
+  </div>
+</div>
+
+<table class="table table-sm bg-white">
+  <thead><tr><th>Description</th><th class="text-end">Qty</th><th class="text-end">Unit price</th><th class="text-end">Tax</th><th class="text-end">Amount</th></tr></thead>
+  <tbody>
+  {% for l in lines %}
+    <tr><td>{{ l.description }}</td><td class="text-end">{{ l.quantity }}</td><td class="text-end">{{ l.unit_price }}</td><td class="text-end">{{ l.tax_amount }}</td><td class="text-end">{{ l.amount }}</td></tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr><td colspan="4" class="text-end">Subtotal</td><td class="text-end">{{ invoice.subtotal }}</td></tr>
+    <tr><td colspan="4" class="text-end">Tax</td><td class="text-end">{{ invoice.tax_total }}</td></tr>
+    <tr><td colspan="4" class="text-end">Discount</td><td class="text-end">-{{ invoice.discount_total }}</td></tr>
+    <tr class="fw-bold"><td colspan="4" class="text-end">Total</td><td class="text-end">{{ invoice.total }}</td></tr>
+    <tr><td colspan="4" class="text-end">Paid</td><td class="text-end">{{ paid }}</td></tr>
+    <tr class="fw-bold"><td colspan="4" class="text-end">Amount due</td><td class="text-end">{{ due }}</td></tr>
+  </tfoot>
+</table>
+
+<h2 class="h6 mt-4">Payments</h2>
+<table class="table table-sm bg-white">
+  <thead><tr><th>Date</th><th>Method</th><th class="text-end">Amount</th><th>Note</th></tr></thead>
+  <tbody>
+  {% for p in payments %}
+    <tr><td>{{ p.date }}</td><td>{{ p.get_method_display }}</td><td class="text-end">{{ p.amount }}</td><td>{{ p.note }}</td></tr>
+  {% empty %}
+    <tr><td colspan="4" class="text-muted">No payments yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if form %}
+<div class="card d-print-none"><div class="card-body">
+  <h2 class="h6">Record a payment</h2>
+  <form method="post" action="{% url 'payment_add' invoice.pk %}" class="row g-2">{% csrf_token %}
+    <div class="col-md-3">{{ form.method.label_tag }} {{ form.method }}</div>
+    <div class="col-md-3">{{ form.amount.label_tag }} {{ form.amount }}</div>
+    <div class="col-md-3">{{ form.date.label_tag }} {{ form.date }}</div>
+    <div class="col-md-3">{{ form.note.label_tag }} {{ form.note }}</div>
+    <div class="col-12"><button class="btn btn-primary btn-sm">Save payment</button></div>
+  </form>
+</div></div>
+{% endif %}
+
+<a href="{% if staff %}{% url 'invoice_list' %}{% else %}{% url 'home' %}{% endif %}" class="d-print-none d-inline-block mt-3">&larr; Back</a>
+{% endblock %}
